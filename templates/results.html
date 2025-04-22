@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Топ 50 слов по IDF</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Слово</th>
+                <th>TF</th>
+                <th>IDF</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.word }}</td>
+                <td>{{ "%.4f"|format(result.tf) }}</td>
+                <td>{{ "%.4f"|format(result.idf) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Кнопка "Сохранить" -->
+    <form id="saveForm">
+    <button type="button" onclick="saveData()">Сохранить</button>
+</form>
+
+<script>
+function saveData() {
+    const data = {{ results | tojson | safe }};
+    fetch('/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.text())
+    .then(message => alert(message))
+    .catch(error => console.error('Ошибка:', error));
+}
+</script>
+
+    <a href="/">Назад</a>
+</body>
+</html>
