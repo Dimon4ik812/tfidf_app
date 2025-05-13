@@ -20,22 +20,35 @@ class App:
         @app.route("/", methods=["GET", "POST"])
         def index():
             if request.method == "POST":
-                file = request.files["file"]
-                if file:
-                    # Сохраняем файл
-                    filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-                    file.save(filepath)
+                # Получаем список загруженных файлов
+                files = request.files.getlist("files")
 
-                    # Читаем и обрабатываем текст
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        text = f.read()
-                        processed_text = self.text_processor.preprocess_text(text)
+                # Проверяем, что хотя бы один файл был загружен
+                if not files or all(file.filename == "" for file in files):
+                    return "Ошибка: Необходимо загрузить хотя бы один файл.", 400
 
-                    # Вычисляем TF-IDF
-                    results = self.text_processor.calculate_tf_idf([processed_text])[
-                        :50
-                    ]
-                    return render_template("results.html", results=results)
+                texts = []
+                for file in files:
+                    if file and file.filename.endswith(".txt"):
+                        # Сохраняем файл
+                        filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+                        file.save(filepath)
+
+                        # Читаем и обрабатываем текст
+                        with open(filepath, "r", encoding="utf-8") as f:
+                            text = f.read()
+                            processed_text = self.text_processor.preprocess_text(text)
+                            texts.append(processed_text)
+
+                # Проверяем, что хотя бы один текст был успешно обработан
+                if not texts:
+                    return "Ошибка: Загружены некорректные файлы.", 400
+
+                # Вычисляем TF-IDF для всех текстов
+                results = self.text_processor.calculate_tf_idf(texts)[:50]
+
+                # Отображаем результаты
+                return render_template("results.html", results=results)
 
             return render_template("index.html")
 
